@@ -165,7 +165,7 @@ std::vector<float> computeHOG(Mat image) {
 			vec4.clear();
 
 			for (int i = 0; i < 19; i++) {
-				//vec1[i]
+				
 				vec1.push_back(histogram[index1][i]);
 				vec2.push_back(histogram[index2][i]);
 				vec3.push_back(histogram[index3][i]);
