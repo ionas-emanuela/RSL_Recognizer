@@ -11,8 +11,8 @@
 #define HISTOGRAM_SIZE 7980
 #define INPUT_WIDTH 100
 #define INPUT_HEIGHT 200
-#define POINT1 0
-#define POINT2 39
+#define POINT1 100
+#define POINT2 100
 #define MAX_QUEUES 40
 
 struct data {
@@ -209,7 +209,9 @@ void pushOntoQueue(std::vector<float> input, std::vector<data> database, unsigne
 	for (unsigned int i = beginIndex; i < endIndex; i++)
 	{
 		database.at(i).distance = computeDistance(input, database.at(i).hog);
-		qs.at(threadIndex).push(database.at(i));
+		g_push_mutex.lock();
+		q.push(database.at(i));
+		g_push_mutex.unlock();
 	}
 }
 
@@ -237,17 +239,13 @@ int classify(std::vector<float> input, std::vector<data> database, int k)
 	}
 
 	for (int i = 0; i < k; i++) {
-		frequency[qs.at(i).top().letterClass]++;
-		qs.at(i).pop();
-		frequency[qs.at(i).top().letterClass]++;
-		qs.at(i).pop();
+		frequency[q.top().letterClass]++;
+		q.pop();
 	}
 
 	int max = 0;
 	int max_i;
 	for (int i = 0; i < 25; i++) {
-
-		printf("%d %d, ", i, frequency[i]);
 
 		if (frequency[i] > max) {
 			max = frequency[i];
@@ -255,10 +253,9 @@ int classify(std::vector<float> input, std::vector<data> database, int k)
 		}
 	}
 
-	printf("\n");
-
-	qs.clear();
-	initialize_queues();
+	while (!q.empty()) {
+		q.pop();
+	}
 
 	return max_i;
 }
@@ -440,7 +437,7 @@ void start() {
 		Mat processed = preprocess_image(frame);
 		std::vector<float> normalizedHistogram = computeHOG(processed);
 		imshow("pre-processed image", processed);
-		printResult(classify(normalizedHistogram, database_A, 10));
+		printResult(classify(normalizedHistogram, database_A, 15));
 
 		flip(frame, frame, 1);
 
@@ -450,6 +447,7 @@ void start() {
 			return;
 		}
 	}
+	
 }
 
 void createDatabase()
@@ -509,7 +507,6 @@ void createDatabase()
 
 int main()
 {
-	initialize_queues();
 	start();
 
 	return 0;
